@@ -26,7 +26,7 @@ def agent_portrayal(agent):
     return portrayal
 
 
-grid = CanvasGrid(agent_portrayal, 7, 31, 500, 500)
+grid = CanvasGrid(agent_portrayal, 7, 35, 500, 500)
 # chart = ChartModule(
 #     [{"Label": "Gini", "Color": "#0000FF"}], data_collector_name="datacollector"
 # )
@@ -42,7 +42,7 @@ model_params = {
         description="Choose how many agents to include in the model",
     ),
     "width": 7,
-    "height": 31,
+    "height": 35,
 }
 
 server = ModularServer(BoardingModel, [grid], "Money Model", model_params)

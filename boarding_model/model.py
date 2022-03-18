@@ -11,34 +11,44 @@ import numpy as np
 from boarding_model.agent import AgentStates, BoardingAgent
 from boarding_model.boarding_group import BoardingGroup, BoardingGroupRandomiser
 
+def remove_three(l):
+    return list(map(lambda x: BoardingGroup(width=3, height=1, square=True).xor(x), l))
 
+top_to_bottom_boarding_class = remove_three([
+    BoardingGroup(y_offset=0, height=11),
+    BoardingGroup(y_offset=11, height=11),
+    BoardingGroup(y_offset=22, height=11)
+])
 
-
-top_to_bottom_boarding_class = [
-    BoardingGroup(y_offset=0),
-    BoardingGroup(y_offset=7),
-    BoardingGroup(y_offset=14),
-    BoardingGroup(y_offset=21),
-    BoardingGroup(y_offset=28)
-]
-
-outside_in_boarding_class = [
+outside_in_boarding_class = remove_three([
     BoardingGroup(aisle_extent=1,
-                  height=30).xor(BoardingGroup(aisle_extent=0, height=30)),
+                  height=33).xor(BoardingGroup(aisle_extent=0, height=33)),
     BoardingGroup(aisle_extent=2,
-                  height=30).xor(BoardingGroup(aisle_extent=1, height=30)),
-    BoardingGroup(aisle_extent=2, height=30)
-]
+                  height=33).xor(BoardingGroup(aisle_extent=1, height=33)),
+    BoardingGroup(aisle_extent=2, height=33)
+])
+
+random_boarding_class = remove_three([
+    BoardingGroup(height=33),
+])
 
 class BoardingModel(Model):
-    def __init__(self, N=100, width=10, height=10):
-        self.num_agents = N
+    def __init__(
+        self,
+        N=100,
+        width=10,
+        height=10,
+        boarding_class=random_boarding_class,
+    ):
+
         self.grid = MultiGrid(width, height, True)
         self.schedule = RandomActivation(self)
 
         randomiser = BoardingGroupRandomiser()
 
-        bacl = copy.copy(outside_in_boarding_class)
+        # print(boarding_class)
+
+        bacl = list(copy.copy(boarding_class))
 
         randomiser.shuffle_boarding_class(bacl)
 
@@ -52,7 +62,7 @@ class BoardingModel(Model):
         self.running = True
 
     def add_boarding_group(self, targets):
-        print(targets)
+        # print(targets)
 
         for target in targets:
             a = BoardingAgent(f"{target[0]},{target[1]}",

@@ -14,25 +14,38 @@ import numpy as np
 from boarding_model.agent import AgentStates, BoardingAgent
 
 class BoardingGroup():
-    def __init__(self, y_offset=0, aisle_extent=0, width=7, height=10) -> None:
+    def __init__(self, y_offset=0, aisle_extent=0, width=7, height=10, square=False) -> None:
         self.aisle = 3
         self.width = width
         self.height = height + y_offset
         self.y_offset = y_offset
         self.aisle_extent = aisle_extent
+        
+        if not square:
+            self.targets = self.generate_targets()
+        else:
+            self.targets = self.generate_square_targets()
 
-        self.targets = self.generate_targets()
+    def generate_square_targets(self) -> List[Tuple[int, int]]:
+        targets = []
+        
+        for y in range(self.y_offset, self.height):
+            for x in range(0, self.width):
+                targets.append((x, y + 2))
+
+        return targets
+
 
     def generate_targets(self) -> List[Tuple[int, int]]:
         targets = []
 
         width_offset = self.width // 2
 
-        for y in range(2 + self.y_offset, self.height - 1):
+        for y in range(self.y_offset, self.height):
             for x in range(self.width):
                 if x <= width_offset + self.aisle_extent and x >= width_offset - self.aisle_extent:
                     continue
-                target_seat = (x, y)
+                target_seat = (x, y + 2)
 
                 targets.append(target_seat)
 
@@ -83,7 +96,7 @@ class BoardingGroupRandomiser():
         k_shuffled = random.sample([*itemgetter(*targets)(result)], k=len(bacl))
 
         for i, target in enumerate(targets):
-            print(target, k_shuffled[i])
+            # print(target, k_shuffled[i])
             result[target] = k_shuffled[i]
 
 

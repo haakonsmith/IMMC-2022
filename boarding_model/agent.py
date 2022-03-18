@@ -33,21 +33,30 @@ class BoardingAgent(Agent):
         self.elapsed_halt = 0
         self.target_halt = 0
 
-        self.speed = 5
+
         # This will be added with the number of people shuffled minus 1
-        self.shuffling_speed = 10
-        # this will be the max and min bounds
-        self.shuffling_offset = 5
 
         self.baggage: int = baggage
-        self.baggage_time = 10
-        self.baggage_offset = 10
+
+        # self.baggage_time = 1
+        # self.seat_exit_time  = 1
+        # self.seat_enter_time = 1
+        # self.shuffling_time = 1
+        # self.speed = 1
+        self.baggage_time = self.generate_value_pm(31, 5, 5)
+        self.seat_exit_time  = self.generate_value_pm(11, 4, 2)
+        self.seat_enter_time = self.generate_value_pm(27, 63, 9)
+        self.shuffling_time = self.generate_value_pm(4, 1, 0)
+        self.speed = self.generate_value_pm(7, 2, 2)
 
         self.stowing = False
         self.on_complete_halt = None
 
     def has_baggage(self) -> bool:
         return self.baggage > 0
+
+    def generate_value_pm(self, med, plus, minus):
+        return max(med + self.model.random.randrange(-minus, plus), 0)
 
     @staticmethod
     def direction_sign(direction):
@@ -92,18 +101,28 @@ class BoardingAgent(Agent):
             self.elapsed_wait += 1
 
     def calculate_wait_time(self):
-        return max(
-            (self.shuffling_speed + len(self.get_number_of_blocking_seats()) -
-             1) + self.model.random.randrange(-self.shuffling_offset,
-                                              self.shuffling_offset), 0)
+        # return self.shuffling_time + len(self.get_number_of_blocking_seats()) - 1
+        blocked_seats = self.get_number_of_blocking_seats()
+
+        num_movements = 0
+        
+        if len(blocked_seats) == 1 and (blocked_seats[0] == 4 or blocked_seats[0] == 2):
+            num_movements += 1 
+        else:
+            num_movements += 2 * len(blocked_seats)
+
+        num_movements += 1 + abs(self.pos[0] - self.targets[0][0])
+        # + self.seat_enter_time * (len(blocked_seats) + 1)
+        return num_movements * self.speed + self.seat_exit_time * len(blocked_seats) 
+
+        
+
 
     def calculate_stow_time(self):
         if not self.has_baggage():
             return 0
 
-        return max(
-            self.baggage_time * self.baggage + self.model.random.randrange(
-                -self.baggage_offset, self.baggage_offset), 0)
+        return self.baggage_time * self.baggage
 
     def get_number_of_blocking_seats(self):
         if self.get_target_side(self.targets[0]) == AgentSide.right:
@@ -162,7 +181,8 @@ class BoardingAgent(Agent):
 
             pos = (x, target[1])
 
-            if not self.model.grid.is_cell_empty(pos):
+            cell = self.model.grid[pos]
+            if len(cell) > 0:
                 blocked_seats.append(pos)
 
         return blocked_seats
@@ -193,11 +213,16 @@ class BoardingAgent(Agent):
             self.state = AgentStates.seeking
             self.model.grid.move_agent(self, new_position)
 
-            self.halt_for(self.speed)
+
+            # self.halt_for(self.speed)
 
             if new_position == self.targets[0]:
-                self.state = AgentStates.sitting
                 self.targets.pop()
+                self.halt_for(self.speed + self.seat_enter_time)
+                self.state = AgentStates.sitting
+            else:
+                self.halt_for(self.speed)
+
         else:
             # self.halt_for(1)
             pass
@@ -211,10 +236,13 @@ class BoardingAgent(Agent):
             self.baggage = 0
 
     def target_str(self):
-        return ""
+        # return ""
         if len(self.targets) == 0:
             return "N"
         return str(self.targets[0])
+
+    def complete_sitting(self):
+        self.state = AgentStates.sitting
 
     def complete_stowing(self):
         self.stowing = False
