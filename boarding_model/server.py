@@ -14,16 +14,17 @@ def agent_portrayal(agent):
                  "Layer": 0,
                  "Color": "red",
                  "text": agent.target_str(),
+                 "text_color": "black",
                  "r": 0.5}
     if agent.state == AgentStates.waiting:
         portrayal["Color"] = 'green'
-    if agent.state == AgentStates.allowing:
-        portrayal["Color"] = 'blue'
+    if agent.state == AgentStates.sitting:
+        portrayal["Color"] = 'orange'
 
     return portrayal
 
 
-grid = CanvasGrid(agent_portrayal, 10, 10, 500, 500)
+grid = CanvasGrid(agent_portrayal, 7, 31, 500, 500)
 # chart = ChartModule(
 #     [{"Label": "Gini", "Color": "#0000FF"}], data_collector_name="datacollector"
 # )
@@ -39,7 +40,7 @@ model_params = {
         description="Choose how many agents to include in the model",
     ),
     "width": 7,
-    "height": 10,
+    "height": 31,
 }
 
 server = ModularServer(BoardingModel, [grid], "Money Model", model_params)
