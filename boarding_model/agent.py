@@ -35,13 +35,13 @@ class BoardingAgent(Agent):
 
         self.speed = 5
         # This will be added with the number of people shuffled minus 1
-        self.shuffling_speed = 60
+        self.shuffling_speed = 10
         # this will be the max and min bounds
         self.shuffling_offset = 5
 
         self.baggage: int = baggage
         self.baggage_time = 10
-        self.baggage_offset = 40
+        self.baggage_offset = 10
 
         self.stowing = False
         self.on_complete_halt = None
@@ -76,6 +76,7 @@ class BoardingAgent(Agent):
         elif self.state == AgentStates.halting:
             self.elapsed_halt += 1
 
+    # The difference between wait and halt is arbitrary but it was written in a rush and I see no benefit in wasting time fixing it.
     def wait_for(self, t: int):
         self.target_time = t
         self.elapsed_wait = 0
@@ -92,9 +93,9 @@ class BoardingAgent(Agent):
 
     def calculate_wait_time(self):
         return max(
-            (self.shuffling_speed + len(self.get_number_of_blocking_seats())) +
-            self.model.random.randrange(-self.shuffling_offset,
-                                        self.shuffling_offset), 0)
+            (self.shuffling_speed + len(self.get_number_of_blocking_seats()) -
+             1) + self.model.random.randrange(-self.shuffling_offset,
+                                              self.shuffling_offset), 0)
 
     def calculate_stow_time(self):
         if not self.has_baggage():
@@ -109,7 +110,7 @@ class BoardingAgent(Agent):
             comp_func = lambda x: x[0] >= self.targets[0][0]
         if self.get_target_side(self.targets[0]) == AgentSide.left:
             comp_func = lambda x: x[0] <= self.targets[0][0]
-        
+
         # This just filters by only the seats on the same side as the target position.
         seats = filter(comp_func,
                        self.get_all_blocked_seats_for_row(self.targets[0]))
@@ -166,27 +167,24 @@ class BoardingAgent(Agent):
 
         return blocked_seats
 
+    def check_if_position_blocks_target(self, pos):
+        target = self.targets[0]
+
+        return (self.get_target_side(target) == AgentSide.right
+                and pos[0] <= self.targets[0][0]) or (
+                    self.get_target_side(target) == AgentSide.left
+                    and pos[0] >= self.targets[0][0])
+
     def move(self):
         new_position = self.navigate()
 
         if len(self.targets) > 0 and self.targets[0][1] - self.pos[
                 1] == 1 and self.state == AgentStates.seeking:
-            target = self.targets[0]
 
-            blocked_seats = self.get_all_blocked_seats_for_row(target)
-
-            for seat in blocked_seats:
-                if (self.get_target_side(target) == AgentSide.right
-                        and seat[0] <= self.targets[0][0]):
-                    self.halt_for(self.calculate_wait_time() +
-                                  self.calculate_stow_time())
-                    self.on_complete_halt = self.complete_shuffling
-
-                if (self.get_target_side(target) == AgentSide.left
-                        and seat[0] >= self.targets[0][0]):
+            for seat in self.get_all_blocked_seats_for_row(self.targets[0]):
+                if self.check_if_position_blocks_target(seat):
                     self.wait_for(self.calculate_wait_time() +
                                   self.calculate_stow_time())
-                    self.on_complete_halt = self.complete_shuffling
 
         if self.state == AgentStates.waiting or self.state == AgentStates.halting:
             return
@@ -195,11 +193,14 @@ class BoardingAgent(Agent):
             self.state = AgentStates.seeking
             self.model.grid.move_agent(self, new_position)
 
-            self.halt_for(2)
+            self.halt_for(self.speed)
 
             if new_position == self.targets[0]:
                 self.state = AgentStates.sitting
                 self.targets.pop()
+        else:
+            # self.halt_for(1)
+            pass
 
         if len(
                 self.targets
