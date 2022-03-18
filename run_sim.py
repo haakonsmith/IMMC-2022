@@ -13,8 +13,8 @@ if __name__ == '__main__':
     results = batch_run(
         BoardingModel,
         parameters=params,
-        iterations=1000,
-        max_steps=700,
+        iterations=10,
+        max_steps=10000,
         number_processes=None,
         data_collection_period=1,
         display_progress=True,

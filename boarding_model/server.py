@@ -20,6 +20,8 @@ def agent_portrayal(agent):
         portrayal["Color"] = 'green'
     if agent.state == AgentStates.sitting:
         portrayal["Color"] = 'orange'
+    if agent.stowing:
+        portrayal["Color"] = 'blue'
 
     return portrayal
 
